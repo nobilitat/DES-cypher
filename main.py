@@ -14,26 +14,44 @@ INITIAL_PERMUTATION = [
     63, 55, 47, 39, 31, 23, 15, 7
 ]
 
+FINAL_PERMUTATION = [
+    40, 8, 48, 16, 56, 24, 64, 32,
+    39, 7, 47, 15, 55, 23, 63, 31,
+    38, 6, 46, 14, 54, 22, 62, 30,
+    37, 5, 45, 13, 53, 21, 61, 29,
+    36, 4, 44, 12, 52, 20, 60, 28,
+    35, 3, 43, 11, 51, 19, 59, 27,
+    34, 2, 42, 10, 50, 18, 58, 26,
+    33, 1, 41, 9, 49, 17, 57, 25
+]
+
 PC1 = [
-    57,	49,	41,	33,	25,	17,	9,
-    1,	58,	50,	42,	34,	26,	18,
-    10,	2,	59,	51,	43,	35,	27,
-    19,	11,	3,	60,	52,	44,	36,
-    63,	55,	47,	39,	31,	23,	15,
-    7,	62,	54,	46,	38,	30,	22,
-    14,	6,	61,	53,	45,	37,	29,
-    21,	13,	5,	28,	20,	12,	4
+    57, 49, 41, 33, 25, 17, 9,
+    1, 58, 50, 42, 34, 26, 18,
+    10, 2, 59, 51, 43, 35, 27,
+    19, 11, 3, 60, 52, 44, 36,
+    63, 55, 47, 39, 31, 23, 15,
+    7, 62, 54, 46, 38, 30, 22,
+    14, 6, 61, 53, 45, 37, 29,
+    21, 13, 5, 28, 20, 12, 4
 ]
 
 PC2 = [
-    14,	17,	11,	24,	1,	5,
-    3,	28,	15,	6,	21,	10,
-    23,	19,	12,	4,	26,	8,
-    16,	7,	27,	20,	13,	2,
-    41,	52,	31,	37,	47,	55,
-    30,	40,	51,	45,	33,	48,
-    44,	49,	39,	56,	34,	53,
-    46,	42,	50,	36,	29,	32,
+    14, 17,	11, 24, 1, 5,
+    3, 28, 15, 6, 21, 10,
+    23, 19, 12, 4, 26, 8,
+    16, 7, 27, 20, 13, 2,
+    41, 52, 31, 37, 47, 55,
+    30, 40, 51, 45, 33, 48,
+    44, 49, 39, 56, 34, 53,
+    46, 42, 50, 36, 29, 32
+]
+
+PF = [
+    16, 7, 20, 21, 29, 12, 28, 17,
+    1, 15, 23, 26, 5, 18, 31, 10,
+    2, 8, 24, 14, 32, 27, 3, 9,
+    19, 13, 30, 6, 22, 11, 4, 25
 ]
 
 NODE_TABLE = [
@@ -93,6 +111,8 @@ SHIFT_BIT = [
 
 
 def convert_key(key, iteration_index):
+    """Generate key for current iteration"""
+
     key = convert_to_64(key)[0]
     key = convert_to_56(key)
 
@@ -115,7 +135,15 @@ def convert_to_56(text):
 
 
 def ip_execute(text):
+    """Initial permutation"""
+
     return ["".join((j[i-1] for i in INITIAL_PERMUTATION)) for j in text]
+
+
+def fp_execute(text):
+    """Final permutation"""
+
+    return "".join([text[i-1] for i in FINAL_PERMUTATION])
 
 
 def convert_16_to_2(string):
@@ -124,6 +152,7 @@ def convert_16_to_2(string):
 
 
 def convert_to_64(text):
+    """Convert source text to 64-bit"""
 
     # 1. convert to hexadecimal number
     result = [hex(ord(i))[2:] for i in text]
@@ -141,25 +170,31 @@ def convert_to_64(text):
 
 
 def f(text, key):
-    converted_text_to_48 = []
-    out = []
+    """
+    Execution function F
 
-    for i in range(4, 36, 4):
-        first = i - (4 + 1) if i == 4 else i - 4
-        last = i + 1 if i < 32 else 0
-        converted_text_to_48.append(text[first] + text[i-4:i] + text[last])
+    :param text: Text 32-bit
+    :param key: Key 48-bit
+    :return: Converted text 32-bit in binary system
+    """
 
-    result = bin(int("".join(converted_text_to_48), 2) ^ int(key, 2)).zfill(48)[2:]
+    # Convert text to 48-bit
+    converted_text_to_48 = [text[i - (4 + 1)] + text[i-4:i] + text[i if i < 32 else 0] for i in range(4, 36, 4)]
 
-    for i in range(6, 54, 6):
-        element = result[i - 6:i].zfill(6)
+    # XOR text 48-bit and key 48-bit
+    result = bin(int("".join(converted_text_to_48), 2) ^ int(key, 2))[2:].zfill(48)
 
-        row = int(element[0] + element[5], 2)
-        column = int(element[1:5], 2)
+    # Permutation with node table
+    result = wrap(result, 6)
+    result = [bin(NODE_TABLE[int(i[0] + i[5], 2)-1][int(i[1:5], 2)-1])[2:].zfill(4) for i in result]
 
-        out.append(bin(NODE_TABLE[row-1][column-1])[2:].zfill(4))
+    # Merge all parts
+    result = "".join(result)
 
-    return "".join(out)
+    # Final permutation
+    result = "".join([result[i-1] for i in PF])
+
+    return result
 
 
 def des():
@@ -173,6 +208,8 @@ def des():
     key = "SMART"
     text = "hello bro"
 
+    encrypted_text = []
+
     # Convert source text to 64-bit blocks
     T = convert_to_64(text)
 
@@ -180,17 +217,23 @@ def des():
     T_1 = ip_execute(T)
 
     for i in T_1:
-        H1, L1 = i[:32], i[32:]
+        H, L = i[:32], i[32:]
 
-        for j in range(1, 16):
-            print("Round: ", j)
+        for j in range(1, 17):
             converted_key = convert_key(key, j)
+            L_changed = f(L, converted_key)
 
-            L2 = f(L1, converted_key)
+            H = bin(int(H, 2) ^ int(L_changed, 2))[2:].zfill(32)
 
-            H1 = bin(int(H1, 2) ^ int(L2, 2))[2:].zfill(32)
+            if j != 17:
+                H, L = L, H
 
-            H1, L1 = L1, H1
+        # Final permutation
+        C = fp_execute(H + L)
+
+        encrypted_text.append(C)
+
+    print(encrypted_text)
 
 
 if __name__ == '__main__':
