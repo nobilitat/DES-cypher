@@ -287,8 +287,7 @@ def decrypt_ecb(text, key):
     text = wrap(text, 16)
     C = convert_hex_to_bin(text)
 
-    key_list = prepare_key(key)
-    key_list.reverse()
+    key_list = prepare_key(key)[::-1]
     decrypted_hex, decrypted_text = ecb_algorithm(C, key_list)
     print('\n\nDecrypted hex:', decrypted_hex)
     print('Decrypted text:', decrypted_text)
@@ -304,8 +303,7 @@ def decrypt_cbc(text, key):
     text = wrap(text, 16)
     C = convert_hex_to_bin(text)
 
-    key_list = prepare_key(key)
-    key_list.reverse()
+    key_list = prepare_key(key)[::-1]
 
     for i in C:
         decrypted_hex, decrypted_text = ecb_algorithm([i], key_list)
@@ -323,21 +321,79 @@ def decrypt_cbc(text, key):
     print('Decrypted text:', ''.join(result_text))
 
 
-def decrypt_3des(text, key):
+def decrypt_des_eee(decrypted_hex, keys):
+    decrypted_text = ''
+
+    for i in keys:
+        key_list = prepare_key(i)[::-1]
+
+        decrypted_hex = wrap(decrypted_hex, 16)
+        decrypted_bin = convert_hex_to_bin(decrypted_hex)
+
+        decrypted_hex, decrypted_text = ecb_algorithm(decrypted_bin, key_list)
+
+    return decrypted_hex, decrypted_text
+
+
+def decrypt_des_eee3(decrypted_hex, key):
+    """Decryption from hex to original text"""
+
+    keys = ["smoke", "big", key]
+    decrypted_hex, decrypted_text = decrypt_des_eee(decrypted_hex, keys)
+
+    print('\n\nDecrypted hex:', decrypted_hex)
+    print('Decrypted text:', decrypted_text)
+
+
+def decrypt_des_eee2(decrypted_hex, key):
+    """Decryption from hex to original text"""
+
+    keys = [key, "big", key]
+    decrypted_hex, decrypted_text = decrypt_des_eee(decrypted_hex, keys)
+
+    print('\n\nDecrypted hex:', decrypted_hex)
+    print('Decrypted text:', decrypted_text)
+
+
+def decrypt_des_ede(text, keys):
+    decrypted_text, decrypted_hex = '', ''
+
+    for i in keys:
+        # first decryption
+        decrypted_hex = wrap(text, 16)
+        decrypted_bin = convert_hex_to_bin(decrypted_hex)
+        key_list = prepare_key(i)[::-1]
+        decrypted_hex, decrypted_text = ecb_algorithm(decrypted_bin, key_list)
+
+        # second
+        decrypted_hex = wrap(decrypted_hex, 16)
+        decrypted_bin = convert_hex_to_bin(decrypted_hex)
+        decrypted_hex, decrypted_text = ecb_algorithm(decrypted_bin, prepare_key(i))
+
+        # third
+        decrypted_hex = wrap(decrypted_hex, 16)
+        decrypted_bin = convert_hex_to_bin(decrypted_hex)
+        key_list = prepare_key(i)[::-1]
+        decrypted_hex, decrypted_text = ecb_algorithm(decrypted_bin, key_list)
+
+    return decrypted_hex, decrypted_text
+
+
+def decrypt_des_ede3(text, key):
     """Decryption from hex to original text"""
 
     keys = [key, "big", "smoke"]
-    decrypted_hex = text
+    decrypted_hex, decrypted_text = decrypt_des_ede(text, keys)
 
-    for i in range(3):
-        key_list = prepare_key(keys[2-i])
-        key_list.reverse()
+    print('\n\nDecrypted hex:', decrypted_hex)
+    print('Decrypted text:', decrypted_text)
 
-        # Convert encrypted hex to 64-bit blocks
-        decrypted_hex = wrap(decrypted_hex, 16)
-        C = convert_hex_to_bin(decrypted_hex)
 
-        decrypted_hex, decrypted_text = ecb_algorithm(C, key_list)
+def decrypt_des_ede2(text, key):
+    """Decryption from hex to original text"""
+
+    keys = [key, "big", key]
+    decrypted_hex, decrypted_text = decrypt_des_ede(text, keys)
 
     print('\n\nDecrypted hex:', decrypted_hex)
     print('Decrypted text:', decrypted_text)
@@ -379,17 +435,75 @@ def encrypt_cbc(text, key):
     print('Encrypted text:', ''.join(result_text))
 
 
+def encrypt_des_eee(text, keys):
+    text_blocks = convert_text_to_64(text)
+    encrypted_hex, encrypted_text = '', ''
+
+    for i in keys:
+        encrypted_hex, encrypted_text = ecb_algorithm(text_blocks, prepare_key(i))
+        text_blocks = wrap(encrypted_hex, 16)
+        text_blocks = convert_hex_to_bin(text_blocks)
+
+    return encrypted_hex, encrypted_text
+
+
 def encrypt_des_eee3(text, key):
     """Encryption original text to hex des-eee3"""
 
     keys = [key, "big", "smoke"]
-    input_hex = convert_text_to_64(text)
+    encrypted_hex, encrypted_text = encrypt_des_eee(text, keys)
 
-    for i in range(3):
-        key_list = prepare_key(keys[i])
-        encrypted_hex, encrypted_text = ecb_algorithm(input_hex, key_list)
+    print('\n\nEncrypted hex:', encrypted_hex)
+    print('Encrypted text:', encrypted_text)
+
+
+def encrypt_des_eee2(text, key):
+    """Encryption original text to hex des-eee2"""
+
+    keys = [key, "big", key]
+    encrypted_hex, encrypted_text = encrypt_des_eee(text, keys)
+
+    print('\n\nEncrypted hex:', encrypted_hex)
+    print('Encrypted text:', encrypted_text)
+
+
+def encrypt_des_ede(text, keys):
+    text_blocks = convert_text_to_64(text)
+    encrypted_hex, encrypted_text = '', ''
+
+    for i in keys:
+        # first encryption
+        encrypted_hex, encrypted_text = ecb_algorithm(text_blocks, prepare_key(i))
+
+        # second
         input_hex = wrap(encrypted_hex, 16)
         input_hex = convert_hex_to_bin(input_hex)
+        key_list = prepare_key(i)[::-1]
+        encrypted_hex, encrypted_text = ecb_algorithm(input_hex, key_list)
+
+        # third
+        input_hex = wrap(encrypted_hex, 16)
+        input_hex = convert_hex_to_bin(input_hex)
+        encrypted_hex, encrypted_text = ecb_algorithm(input_hex, prepare_key(i))
+
+    return encrypted_hex, encrypted_text
+
+
+def encrypt_des_ede3(text, key):
+    """Encryption original text to hex des-ede3"""
+
+    keys = [key, "big", "smoke"]
+    encrypted_hex, encrypted_text = encrypt_des_ede(text, keys)
+
+    print('\n\nEncrypted hex:', encrypted_hex)
+    print('Encrypted text:', encrypted_text)
+
+
+def encrypt_des_ede2(text, key):
+    """Encryption original text to hex des-ede2"""
+
+    keys = [key, "big", key]
+    encrypted_hex, encrypted_text = encrypt_des_ede(text, keys)
 
     print('\n\nEncrypted hex:', encrypted_hex)
     print('Encrypted text:', encrypted_text)
@@ -404,9 +518,11 @@ def des(text, key, mode, des_type):
         if des_type == 3:
             encrypt_des_eee3(text, key)
         if des_type == 4:
-            pass
+            encrypt_des_ede3(text, key)
         if des_type == 5:
-            pass
+            encrypt_des_eee2(text, key)
+        if des_type == 6:
+            encrypt_des_ede2(text, key)
 
     if mode == 2:
         if des_type == 1:
@@ -414,7 +530,13 @@ def des(text, key, mode, des_type):
         if des_type == 2:
             decrypt_cbc(text, key)
         if des_type == 3:
-            decrypt_3des(text, key)
+            decrypt_des_eee3(text, key)
+        if des_type == 4:
+            decrypt_des_ede3(text, key)
+        if des_type == 5:
+            decrypt_des_eee2(text, key)
+        if des_type == 6:
+            decrypt_des_ede2(text, key)
 
 
 if __name__ == '__main__':
@@ -423,6 +545,6 @@ if __name__ == '__main__':
         text = input('\nInput text/hex: ')
         key = input('Input key: ')
         mode = int(input('Input mode (1 - encrypt, 2 - decrypt): '))
-        print('(1 - DES-ECB, 2 - DES-CBC, 3 - DES-EEE3, 4 - DES-EDE3, 5 - DES-EEE2)')
+        print('(1 - DES-ECB, 2 - DES-CBC, 3 - DES-EEE3, 4 - DES-EDE3, 5 - DES-EEE2, 6 - DES - EDE2)')
         des_type = int(input('''Choose des type: '''))
         des(text, key, mode, des_type)
