@@ -289,8 +289,8 @@ def decrypt_ecb(text, key):
 
     key_list = prepare_key(key)
     key_list.reverse()
-    encrypted_hex, decrypted_text = ecb_algorithm(C, key_list)
-    print('\n\nDecrypted hex:', encrypted_hex)
+    decrypted_hex, decrypted_text = ecb_algorithm(C, key_list)
+    print('\n\nDecrypted hex:', decrypted_hex)
     print('Decrypted text:', decrypted_text)
 
 
@@ -308,19 +308,39 @@ def decrypt_cbc(text, key):
     key_list.reverse()
 
     for i in C:
-        encrypted_hex, encrypted_text = ecb_algorithm([i], key_list)
+        decrypted_hex, decrypted_text = ecb_algorithm([i], key_list)
 
-        encrypted_dec = int(encrypted_hex, 16)
-        encrypted = encrypted_dec ^ int(c_previous, 2)
-        c_previous = bin(encrypted_dec)[2:]
+        decrypted_dec = int(decrypted_hex, 16)
+        decrypted = decrypted_dec ^ int(c_previous, 2)
+        c_previous = bin(decrypted_dec)[2:]
 
-        encrypted_text = convert_bin_to_text(bin(encrypted)[2:].zfill(64))
+        decrypted_text = convert_bin_to_text(bin(decrypted)[2:].zfill(64))
 
-        result_hex.append(hex(encrypted)[2:].zfill(16))
-        result_text.append(encrypted_text)
+        result_hex.append(hex(decrypted)[2:].zfill(16))
+        result_text.append(decrypted_text)
 
     print('\n\nDecrypted hex:', ''.join(result_hex))
     print('Decrypted text:', ''.join(result_text))
+
+
+def decrypt_3des(text, key):
+    """Decryption from hex to original text"""
+
+    keys = [key, "big", "smoke"]
+    decrypted_hex = text
+
+    for i in range(3):
+        key_list = prepare_key(keys[2-i])
+        key_list.reverse()
+
+        # Convert encrypted hex to 64-bit blocks
+        decrypted_hex = wrap(decrypted_hex, 16)
+        C = convert_hex_to_bin(decrypted_hex)
+
+        decrypted_hex, decrypted_text = ecb_algorithm(C, key_list)
+
+    print('\n\nDecrypted hex:', decrypted_hex)
+    print('Decrypted text:', decrypted_text)
 
 
 def encrypt_ecb(text, key):
@@ -341,7 +361,7 @@ def encrypt_cbc(text, key):
 
     C = '0000000000000001'
     key_list = prepare_key(key)
-    result_hex,  result_text  = [], []
+    result_hex,  result_text = [], []
 
     # Convert source text to 64-bit blocks
     T = convert_text_to_64(text)
@@ -359,6 +379,22 @@ def encrypt_cbc(text, key):
     print('Encrypted text:', ''.join(result_text))
 
 
+def encrypt_des_eee3(text, key):
+    """Encryption original text to hex des-eee3"""
+
+    keys = [key, "big", "smoke"]
+    input_hex = convert_text_to_64(text)
+
+    for i in range(3):
+        key_list = prepare_key(keys[i])
+        encrypted_hex, encrypted_text = ecb_algorithm(input_hex, key_list)
+        input_hex = wrap(encrypted_hex, 16)
+        input_hex = convert_hex_to_bin(input_hex)
+
+    print('\n\nEncrypted hex:', encrypted_hex)
+    print('Encrypted text:', encrypted_text)
+
+
 def des(text, key, mode, des_type):
     if mode == 1:
         if des_type == 1:
@@ -366,6 +402,10 @@ def des(text, key, mode, des_type):
         if des_type == 2:
             encrypt_cbc(text, key)
         if des_type == 3:
+            encrypt_des_eee3(text, key)
+        if des_type == 4:
+            pass
+        if des_type == 5:
             pass
 
     if mode == 2:
@@ -374,7 +414,7 @@ def des(text, key, mode, des_type):
         if des_type == 2:
             decrypt_cbc(text, key)
         if des_type == 3:
-            pass
+            decrypt_3des(text, key)
 
 
 if __name__ == '__main__':
@@ -383,5 +423,6 @@ if __name__ == '__main__':
         text = input('\nInput text/hex: ')
         key = input('Input key: ')
         mode = int(input('Input mode (1 - encrypt, 2 - decrypt): '))
-        des_type = int(input('Choose des type (1 - DES-ECB, 2 - DES-CBC, 3 - 3DES): '))
+        print('(1 - DES-ECB, 2 - DES-CBC, 3 - DES-EEE3, 4 - DES-EDE3, 5 - DES-EEE2)')
+        des_type = int(input('''Choose des type: '''))
         des(text, key, mode, des_type)
