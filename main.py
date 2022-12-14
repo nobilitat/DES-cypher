@@ -170,6 +170,8 @@ def convert_key(i, K1, K2):
 
 
 def convert_to_56(text):
+    """Convert 64-bit blocks to 56-bit"""
+
     return ''.join((text[i-1] for i in PC1))
 
 
@@ -185,11 +187,6 @@ def fp_execute(text):
     return ''.join([text[i-1] for i in FINAL_PERMUTATION])
 
 
-def convert_16_to_2(string):
-    out = [bin(int(i, 16))[2:].zfill(4) for i in string]
-    return ''.join(out)
-
-
 def convert_text_to_64(text):
     """Convert source text to 64-bit"""
 
@@ -203,12 +200,14 @@ def convert_text_to_64(text):
     result = [i.zfill(16) for i in result]
 
     # 4. convert to binary number system
-    result = [convert_16_to_2(i) for i in result]
+    result = convert_hex_to_bin(result)
 
     return result
 
 
-def convert_16_to_64(text):
+def convert_hex_to_bin(text):
+    """Convert number hex to binary number system"""
+
     return [bin(int(i, 16))[2:].zfill(64) for i in text]
 
 
@@ -241,6 +240,14 @@ def f(text, key):
 
 
 def ecb_algorithm(blocks, key_list):
+    """
+    Main algorithm for des
+
+    :param blocks: blocks of original text
+    :param key_list: list of keys for every round
+    :return: results in hex number system and text
+    """
+
     result = []
 
     # Initial permutation
@@ -274,9 +281,11 @@ def ecb_algorithm(blocks, key_list):
 
 
 def decrypt_ecb(text, key):
+    """Decryption from hex to original text"""
+
     # Convert encrypted hex to 64-bit blocks
     text = wrap(text, 16)
-    C = convert_16_to_64(text)
+    C = convert_hex_to_bin(text)
 
     key_list = prepare_key(key)
     key_list.reverse()
@@ -286,12 +295,14 @@ def decrypt_ecb(text, key):
 
 
 def decrypt_cbc(text, key):
+    """Decryption from hex to original text"""
+
     c_previous = '0000000000000001'
     result_hex, result_text = [], []
 
     # Convert encrypted hex to 64-bit blocks
     text = wrap(text, 16)
-    C = convert_16_to_64(text)
+    C = convert_hex_to_bin(text)
 
     key_list = prepare_key(key)
     key_list.reverse()
@@ -313,6 +324,8 @@ def decrypt_cbc(text, key):
 
 
 def encrypt_ecb(text, key):
+    """Encryption original text to hex des-ecb"""
+
     # Convert source text to 64-bit blocks
     T = convert_text_to_64(text)
     print('\nT: ', T)
@@ -324,6 +337,8 @@ def encrypt_ecb(text, key):
 
 
 def encrypt_cbc(text, key):
+    """Encryption original text to hex des-cbc"""
+
     C = '0000000000000001'
     key_list = prepare_key(key)
     result_hex,  result_text  = [], []
