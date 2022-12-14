@@ -116,18 +116,26 @@ NODE_TABLE = [
     ]
 ]
 
-
 SHIFT_BIT = [
     1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1
 ]
+
+
+def convert_bin_to_hex(string):
+    """Convert encrypted/decrypted binary to hex"""
+
+    result = wrap(string, 8)
+    result = "".join([hex(int(i, 2))[2:].zfill(2) for i in result])
+    return result
 
 
 def convert_bin_to_text(string):
     """Convert encrypted/decrypted binary to text"""
 
     result = wrap(string, 8)
-    result_16 = "".join([hex(int(i, 2))[2:].zfill(2) for i in result])
-    return result_16
+    result = filter(lambda x: x != '00000000', result)
+    result = "".join([chr(int(i, 2)) for i in result])
+    return result
 
 
 def prepare_key(key):
@@ -260,8 +268,9 @@ def ecb_algorithm(blocks, key_list):
         C = fp_execute(H + L)
         result.append(C)
 
-    result = ''.join([convert_bin_to_text(i) for i in result])
-    return result
+    result_16 = "".join([convert_bin_to_hex(i) for i in result])
+    result_text = "".join([convert_bin_to_text(i) for i in result])
+    return result_16, result_text
 
 
 def decrypt_ecb(text, key):
@@ -271,8 +280,9 @@ def decrypt_ecb(text, key):
 
     key_list = prepare_key(key)
     key_list.reverse()
-    decrypted_text = ecb_algorithm(C, key_list)
-    print('\n\nDecrypted text:', decrypted_text)
+    encrypted_hex, decrypted_text = ecb_algorithm(C, key_list)
+    print('\n\nDecrypted hex:', encrypted_hex)
+    print('Decrypted text:', decrypted_text)
 
 
 def encrypt_ecb(text, key, r = False):
@@ -281,8 +291,9 @@ def encrypt_ecb(text, key, r = False):
     print('\nT: ', T)
 
     key_list = prepare_key(key)
-    encrypted_text = ecb_algorithm(T, key_list)
-    print('\n\nEncrypted text:', encrypted_text)
+    encrypted_hex, encrypted_text = ecb_algorithm(T, key_list)
+    print('\n\nEncrypted hex:', encrypted_hex)
+    print('Encrypted text:', encrypted_text)
 
 
 def des(text, key, mode, des_type):
@@ -306,7 +317,7 @@ def des(text, key, mode, des_type):
 if __name__ == '__main__':
 
     while True:
-        text = input('Input text: ')
+        text = input('Input text/hex: ')
         key = input('Input key: ')
         mode = int(input('Input mode (1 - encrypt, 2 - decrypt): '))
         des_type = int(input('Choose des type (1 - DES-ECB, 2 - DES-CBC, 3 - 3DES): '))
