@@ -268,13 +268,13 @@ def ecb_algorithm(blocks, key_list):
         C = fp_execute(H + L)
         result.append(C)
 
-    result_16 = "".join([convert_bin_to_hex(i) for i in result])
-    result_text = "".join([convert_bin_to_text(i) for i in result])
+    result_16 = ''.join([convert_bin_to_hex(i) for i in result])
+    result_text = ''.join([convert_bin_to_text(i) for i in result])
     return result_16, result_text
 
 
 def decrypt_ecb(text, key):
-    # Convert encrypted text to 64-bit blocks
+    # Convert encrypted hex to 64-bit blocks
     text = wrap(text, 16)
     C = convert_16_to_64(text)
 
@@ -285,7 +285,34 @@ def decrypt_ecb(text, key):
     print('Decrypted text:', decrypted_text)
 
 
-def encrypt_ecb(text, key, r = False):
+def decrypt_cbc(text, key):
+    c_previous = '0000000000000001'
+    result_hex, result_text = [], []
+
+    # Convert encrypted hex to 64-bit blocks
+    text = wrap(text, 16)
+    C = convert_16_to_64(text)
+
+    key_list = prepare_key(key)
+    key_list.reverse()
+
+    for i in C:
+        encrypted_hex, encrypted_text = ecb_algorithm([i], key_list)
+
+        encrypted_dec = int(encrypted_hex, 16)
+        encrypted = encrypted_dec ^ int(c_previous, 2)
+        c_previous = bin(encrypted_dec)[2:]
+
+        encrypted_text = convert_bin_to_text(bin(encrypted)[2:].zfill(64))
+
+        result_hex.append(hex(encrypted)[2:].zfill(16))
+        result_text.append(encrypted_text)
+
+    print('\n\nDecrypted hex:', ''.join(result_hex))
+    print('Decrypted text:', ''.join(result_text))
+
+
+def encrypt_ecb(text, key):
     # Convert source text to 64-bit blocks
     T = convert_text_to_64(text)
     print('\nT: ', T)
@@ -296,12 +323,33 @@ def encrypt_ecb(text, key, r = False):
     print('Encrypted text:', encrypted_text)
 
 
+def encrypt_cbc(text, key):
+    C = '0000000000000001'
+    key_list = prepare_key(key)
+    result_hex,  result_text  = [], []
+
+    # Convert source text to 64-bit blocks
+    T = convert_text_to_64(text)
+    print('\nT: ', T)
+
+    for i in T:
+        # XOR C and T
+        C = bin(int(C, 2) ^ int(i, 2))[2:].zfill(64)
+
+        encrypted_hex, encrypted_text = ecb_algorithm([C], key_list)
+        result_hex.append(encrypted_hex)
+        result_text.append(encrypted_text)
+
+    print('\n\nEncrypted hex:', ''.join(result_hex))
+    print('Encrypted text:', ''.join(result_text))
+
+
 def des(text, key, mode, des_type):
     if mode == 1:
         if des_type == 1:
             encrypt_ecb(text, key)
         if des_type == 2:
-            pass
+            encrypt_cbc(text, key)
         if des_type == 3:
             pass
 
@@ -309,7 +357,7 @@ def des(text, key, mode, des_type):
         if des_type == 1:
             decrypt_ecb(text, key)
         if des_type == 2:
-            pass
+            decrypt_cbc(text, key)
         if des_type == 3:
             pass
 
@@ -317,7 +365,7 @@ def des(text, key, mode, des_type):
 if __name__ == '__main__':
 
     while True:
-        text = input('Input text/hex: ')
+        text = input('\nInput text/hex: ')
         key = input('Input key: ')
         mode = int(input('Input mode (1 - encrypt, 2 - decrypt): '))
         des_type = int(input('Choose des type (1 - DES-ECB, 2 - DES-CBC, 3 - 3DES): '))
